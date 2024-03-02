@@ -1,7 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 const api = {
-  nodeVersion: () => ipcRenderer.invoke("nodeVersion"),
+  openFile: () => ipcRenderer.invoke("openFile"),
+  saveFile: () => ipcRenderer.invoke("saveFile"),
+  readFile: (file: string) => ipcRenderer.invoke("readFile", file),
+  writeFile: (file: string, content: string) =>
+    ipcRenderer.send("writeFile", file, content),
 };
 
 contextBridge.exposeInMainWorld("api", api);

@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import path from "path";
+import { readFile, writeFile } from "node:fs/promises";
 
 if (require("electron-squirrel-startup")) {
   app.quit();
@@ -36,4 +37,23 @@ app.on("activate", () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-ipcMain.handle("nodeVersion", () => process.version);
+ipcMain.handle("openFile", async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({});
+  if (!canceled) {
+    return filePaths[0];
+  }
+  return null;
+});
+ipcMain.handle("saveFile", async () => {
+  const { canceled, filePath } = await dialog.showSaveDialog({});
+  if (!canceled) {
+    return filePath;
+  }
+  return null;
+});
+ipcMain.handle("readFile", async (e, file: string) => {
+  return readFile(file).then((v) => v.toString());
+});
+ipcMain.on("writeFile", async (e, file: string, content: string) => {
+  writeFile(file, content);
+});
