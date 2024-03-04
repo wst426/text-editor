@@ -1,10 +1,69 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu } from "electron";
 import path from "path";
 import { readFile, writeFile } from "node:fs/promises";
 
 if (require("electron-squirrel-startup")) {
   app.quit();
 }
+
+const createMenu = () => {
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: "File",
+        submenu: [
+          {
+            label: "Open",
+            accelerator: "CommandOrControl+O",
+            click: async (item, window) => {
+              window.webContents.send("event:openFile");
+            },
+          },
+          {
+            label: "Save",
+            accelerator: "CommandOrControl+S",
+            click: async (item, window) => {
+              window.webContents.send("event:saveFile");
+            },
+          },
+          {
+            role: "quit",
+          },
+        ],
+      },
+      {
+        label: "Edit",
+        submenu: [
+          { role: "undo" },
+          { role: "redo" },
+          { type: "separator" },
+          { role: "cut" },
+          { role: "copy" },
+          { role: "paste" },
+          { type: "separator" },
+          { role: "selectAll" },
+        ],
+      },
+      {
+        label: "View",
+        submenu: [
+          { role: "reload" },
+          { role: "toggleDevTools" },
+          { type: "separator" },
+          { role: "resetZoom" },
+          { role: "zoomIn" },
+          { role: "zoomOut" },
+          { type: "separator" },
+          { role: "togglefullscreen" },
+        ],
+      },
+      {
+        label: "Window",
+        submenu: [{ role: "minimize" }, { role: "close" }],
+      },
+    ]),
+  );
+};
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
@@ -23,7 +82,7 @@ const createWindow = () => {
   }
 };
 
-app.on("ready", createWindow);
+app.whenReady().then(createMenu).then(createWindow);
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
@@ -37,23 +96,23 @@ app.on("activate", () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-ipcMain.handle("openFile", async () => {
+ipcMain.handle("command:openFile", async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({});
   if (!canceled) {
     return filePaths[0];
   }
   return null;
 });
-ipcMain.handle("saveFile", async () => {
+ipcMain.handle("command:saveFile", async () => {
   const { canceled, filePath } = await dialog.showSaveDialog({});
   if (!canceled) {
     return filePath;
   }
   return null;
 });
-ipcMain.handle("readFile", async (e, file: string) => {
+ipcMain.handle("command:readFile", async (e, file: string) => {
   return readFile(file).then((v) => v.toString());
 });
-ipcMain.on("writeFile", async (e, file: string, content: string) => {
+ipcMain.on("command:writeFile", async (e, file: string, content: string) => {
   writeFile(file, content);
 });
